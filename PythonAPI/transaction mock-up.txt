@@ -1,0 +1,29 @@
+def get_general_status():
+    serial.write("request general status")
+
+    time.sleep(DELAY)
+
+    status = serial.read()
+
+    status = bin(status)
+
+    print(status)
+
+
+serial transaction (general status):
+command (1 byte):
+    type code = 00010111
+
+response (3 bytes):
+    type code = 00010111
+    byte 1 = 01000000 -> nothing in progress, axis stopped, not error limits, no axis reset, no IO change, IO as output, 0, 0
+    byte 2 = 00000000
+
+
+serial transaction (move shoulder):
+command (3 bytes):
+    type code = 10000001
+    byte 1 = 00000100
+    byte 2 = 00000000
+response (1 byte):
+    type code = 00000000

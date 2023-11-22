@@ -33,6 +33,10 @@ DELAY = 0.01
 STOP_POWERED, FORWARDS, BACKWARDS, STOP_UNPOWERED = range(4)
 
 DEAD_STOP, RAMP_STOP, FREE_STOP, FREE_OFF = range(4)
+# Dead = instant stop and locked in position
+# Ramp = gradual stop and locked in position
+# Free = instant stop, but free to move by hand
+# Free Off = sends power to motors and locked in position -> use after power off
 
 CP_ERROR, CURRENT_POSITION, ERROR_LIMIT, NEW_POSITION, \
     SPEED, KP, KI, KD, DEAD_BAND, OFFSET, MAX_FORCE, CURRENT_FORCE, \
@@ -55,9 +59,13 @@ CTRLS = [#IP, CTRL, Min, Max
     [1, 2, -3554, 0],     # ZED         (Up/Down)
     [1, 3, -1080, 1080],  # YAW         (The last joint - this connects the gripper & wrist to the rest of the arm)
     [1, 4, -30, 1200],    # GRIPPER     (Gripper on the end of the robot)
+    #[0, 0, -4000, 4000],  # BASE1       (optional motor 1 - unused)
+    #[0, 1, -4000, 4000],  # BASE2       (optional motor 2 - unused)
+    #[0, 4, -4000, 4000]   # AUX  (auxilliary connection - unused)
 ]
 
 WRIST1, WRIST2, ELBOW, SHOULDER, ZED, YAW, GRIPPER = range(7)
+#WRIST1, WRIST2, ELBOW, SHOULDER, ZED, YAW, GRIPPER, BASE1, BASE2, AUX = range(10)
 
 class RTX:
     #Initialise the RTX object & establish serial communication
@@ -67,22 +75,24 @@ class RTX:
             baudrate=9600,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
+            #parity=serial.PARITY_EVEN,
             stopbits=serial.STOPBITS_ONE,
             xonxoff=False,
             rtscts=False
         )
         
         #Prepare for serial communication
-        self.ser.write(bytearray([0x0]))
+        self.ser.write(bytearray([0x0])) # CMD: go active
         
         time.sleep(DELAY)
         
+        # Prints all data in input buffer while it has data
         while self.ser.in_waiting > 0:
             print(ord(self.ser.read()))
         
         self.GlobalIP = None
         
-        self.totalCmds = 0;
+        self.totalCmds = 0
         
         self.StartTime = time.time() #This variable is only for debugging purposes
         
@@ -90,10 +100,11 @@ class RTX:
         print()
     
     def reset(self):
-        self.ser.write(bytearray([0x0]))
+        self.ser.write(bytearray([0x0])) # CMD: go active
         
         time.sleep(DELAY)
         
+        # Prints all data in input buffer while it has data
         while self.ser.in_waiting > 0:
             print(ord(self.ser.read()))
         
@@ -104,12 +115,12 @@ class RTX:
         print("Performing motor activation & setting params...")
         
         #Allow power
-        self.stop(FREE_OFF)
+        self.stop(FREE_OFF) # Send power to motors
         
         #Set params
         for ctrl in CTRLS:
             self.changeParam(ctrl, SPEED, 150)
-            self.changeParam(ctrl, MAX_FORCE, 30)
+            self.changeParam(ctrl, MAX_FORCE, 30) # Max force allowed
         
         print("\033[94m"+"Robot setup finished"+"\033[0m")
         print()
@@ -122,15 +133,16 @@ class RTX:
         #Stop all
         self.manual()
         
-        # Set position
+        # Set current position for relative movement
         self.setPos(CTRLS[joint], 0)
         
-        # Move to position by value
+        # Set the next position to move to
         self.numeric(CTRLS[joint], value)
         
         # Start the movement, and wait
         self.start()
         self.wait()
+
     def move1(self, joint, value):
         #Stop all
         # self.manual()
@@ -273,7 +285,7 @@ class RTX:
         #PLACEHOLDER CODE UNTIL WRIST FUNCTIONALITY HAS BEEN WORKED OUT
         print("Soak testing wrists")
     
-    #Control manual movement
+    #Control manual movement -> attempts to set all motors to stop while still powered
     def manual(
         self,
         wrist1=STOP_POWERED,
@@ -302,6 +314,7 @@ class RTX:
     #Wait until all joints have stopped moving
     def wait(self):
         print("Waiting... ("+str(round(time.time() - self.StartTime,4))+"s)")
+        # Checks general status request for any stopped axis ('& 1' gives boolean)
         while self.command(0, 0x17)[1] & 1:
             time.sleep(DELAY * 5)
         while self.command(1, 0x17)[1] & 1:
