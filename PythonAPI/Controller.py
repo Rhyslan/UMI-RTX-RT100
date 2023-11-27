@@ -12,7 +12,7 @@ DEBUG = False
 
 #Robot = RTX("/dev/ttyUSB0")
 #Robot = RTX("/dev/USB0")
-Robot = RTX("/dev/ttyRTX0")
+Robot = RTX("COM5")
 
 try:
   Robot.setup()

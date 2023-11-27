@@ -10,7 +10,7 @@ from RTX import *
 
 WRIST1, WRIST2, ELBOW, SHOULDER, ZED, YAW, GRIPPER = range(7)
 
-RobotObject = RTX("/dev/ttyUSB0")
+RobotObject = RTX("COM5")
 
 #This will amke the robot move all of it's joints to their maximum positions, then back to minimum
 #RobotObject.soakTest()

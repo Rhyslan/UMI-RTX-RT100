@@ -69,7 +69,7 @@ WRIST1, WRIST2, ELBOW, SHOULDER, ZED, YAW, GRIPPER = range(7)
 
 class RTX:
     #Initialise the RTX object & establish serial communication
-    def __init__(self, destPort="/dev/ttyUSB0", type="RT100"):
+    def __init__(self, destPort="COM5", type="RT100"):
         self.ser = serial.Serial(
             port=destPort,
             baudrate=9600,
